@@ -11,7 +11,7 @@
 
 1) Open a browser
 2) If you use a web server open the main page on http://ipAddressOfYourServer/dist/ 
-   or if you don't use a webserver write a full path "path"+frontend-nanodegree-mobile-portfolio/dist/index.html in the bowser
+   or if you don't use a webserver write a full path "path"+neighborhood-map-project/dist/index.html in the bowser
 
 
 
