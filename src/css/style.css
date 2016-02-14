@@ -1,0 +1,46 @@
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+a {
+    text-decoration: none;
+    color: rgb(63,81,181);
+    text-transform: uppercase;
+    font-family: "Roboto","Helvetica","Arial",sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0;
+
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#search{
+    z-index: 10;
+    position: absolute;
+    top: 4rem;
+    left: 1rem;
+
+    width: 10rem;
+
+
+}
+
+
+.infoBox.mdl-card{
+    height: 40%;
+    display: inline-block;
+    width: 30%;
+    position: absolute;
+    float: right;
+    top: 55%;
+    right: 5%;
+    box-shadow: 9px 13px 46px -2px rgba(0,0,0,0.75);
+    transition-duration: .4s;
+    overflow: auto;
+}
