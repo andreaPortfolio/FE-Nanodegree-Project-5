@@ -51,11 +51,11 @@ var model = {
 
 
 var map;
-var infowindow = new google.maps.InfoWindow();
+var infowindow;
 var bounds;
 
 // class contenent marker 
-var Point = function (data) {
+var Point = function(data) {
     'use strict';
     var self = this;
 
@@ -64,16 +64,27 @@ var Point = function (data) {
     this.wikiInfo = ko.observable(data.wikiInfo); //set information observable
 
 
+
+    var goldStar = {
+        path: 'M 125,5 155,90 245,90 175,145 200,230 125,180 50,230 75,145 5,90 95,90 z',
+        fillColor: 'yellow',
+        fillOpacity: 0.8,
+        scale: 0.1,
+        strokeColor: 'gold',
+        strokeWeight: 2
+    };
+
     //create marker
     var marker = new google.maps.Marker({
         position: self.position(),
         map: map,
+        icon: goldStar,
         title: self.title(),
         animation: google.maps.Animation.DROP
     });
     //set bounds for each marker and fit bounds on map
     bounds.extend(new google.maps.LatLng(this.position()));
-    map.fitBounds(bounds);
+
 
 
     this.marker = ko.observable(marker); //set marker observable
@@ -86,38 +97,41 @@ var Point = function (data) {
             self.marker().setAnimation(null);
         }, 700);
         callFoursquare(data);
+        map.fitBounds(bounds);
+        map.panTo(marker.getPosition());
 
     });
 
 };
 
 //store ajax call in a variable
-var callFoursquare =  function(dataModel){
-        $.ajax({
-            url: model.foursquareUrl,
-            data: 'intent=match&ll=' + dataModel.position.lat + ',' + dataModel.position.lng + '&categoryId=4deefb944765f83613cdba6e'+'&query=Creed&client_id=' + model.foursquareClientID +
-                '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
-            dataType: 'json',
+var callFoursquare = function(dataModel) {
+    $.ajax({
+        url: model.foursquareUrl,
+        data: 'intent=match&ll=' + dataModel.position.lat + ',' + dataModel.position.lng + '&categoryId=4deefb944765f83613cdba6e' + '&query=Creed&client_id=' + model.foursquareClientID +
+            '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
+        dataType: 'json',
 
-            success: function(data) {
-                var content = "<h3>"+dataModel.title+"</h3>"+"<img src='"+data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix+
-                    '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix+"'>"+"<div class='mdl-card__supporting-text'>"+dataModel.wikiInfo+"</div>";
-                //set local storage
-                localStorage.setItem('data.image',content);
-                infowindow.setContent(content);
+        success: function(data) {
+            var content = "<h3>" + dataModel.title + "</h3>" + "<img src='" + data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix +
+                '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix + "'>" + "<div class='mdl-card__supporting-text'>" + dataModel.wikiInfo + "</div>";
+            //set local storage
+            localStorage.setItem('data.image', content);
+            infowindow.setContent(content);
 
-            },
 
-            error: function(jqXHR, status, err) {
-                var error = "couldn't connect to host " + status +err;
-                infowindow.setContent(error);
+        },
 
-            }
+        error: function(jqXHR, status, err) {
+            var error = "couldn't connect to host " + status + err;
+            infowindow.setContent(error);
 
-        });
-                
+        }
 
-    };
+    });
+
+
+};
 
 var viewModel = function() {
 
@@ -129,6 +143,7 @@ var viewModel = function() {
         disableDefaultUI: true
     });
     bounds = new google.maps.LatLngBounds();
+    infowindow = new google.maps.InfoWindow();
 
     var self = this;
     this.searchName = ko.observable();
@@ -142,8 +157,7 @@ var viewModel = function() {
     //create live search function
     this.liveSearch = ko.computed(function() {
 
-        //var search = self.searchName().toLowerCase();
-
+        infowindow.close();
         if (!self.searchName()) {
 
             self.points().forEach(function(point) {
@@ -165,17 +179,18 @@ var viewModel = function() {
 
 
     // create function for click element name in list
-    this.forSquare = function (data) {
-        data.marker().setAnimation(google.maps.Animation.BOUNCE);//set bounce
-        setTimeout(function() {
-            data.marker().setAnimation(null);
-        }, 700);
-        google.maps.event.trigger(data.marker(), 'click');//open marker when link is clicked
-                     
-    };
+    this.forSquare = function() {
+        return function(data) {
+            google.maps.event.trigger(data.marker(), 'click'); //open marker when link is clicked
 
+        };
+
+    }
 
 };
 
+function initMap() {
+    ko.applyBindings(new viewModel());
+}
 
-ko.applyBindings(viewModel());
+//
