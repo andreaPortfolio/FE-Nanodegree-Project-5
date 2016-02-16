@@ -50,11 +50,12 @@ var model = {
 };
 
 
+var map;
+var infowindow = new google.maps.InfoWindow();
+var bounds;
 
-
-// class contenent marker and infowindow
-
-var Point = function(data) {
+// class contenent marker 
+var Point = function (data) {
     'use strict';
     var self = this;
 
@@ -70,119 +71,111 @@ var Point = function(data) {
         title: self.title(),
         animation: google.maps.Animation.DROP
     });
+    //set bounds for each marker and fit bounds on map
+    bounds.extend(new google.maps.LatLng(this.position()));
+    map.fitBounds(bounds);
 
 
     this.marker = ko.observable(marker); //set marker observable
 
-    //create html for infowindow
-    var row = '<div class="mdl-grid">';
-    var grid2 = '<div class="mdl-cell mdl-cell--2-col mdl-card__media">';
-    var grid8 = '<div class="mdl-cell mdl-cell--8-col mdl-card__supporting-text">';
-    var titleClass = '<div class="mdl-card__title">';
 
-
-    //create infowindow
-    var infowindow = new google.maps.InfoWindow({
-
-        content: titleClass + "<h4>" + this.title() + "</h4></div>" + row + grid8 + "<p>" + this.wikiInfo() + "</p></div></div>"
-    });
-    this.infowindow = ko.observable(infowindow); // set infowindow observable
-    // set infowindow when marker is clikked
     this.marker().addListener('click', function() {
-        self.infowindow().open(self.marker().get('map'), self.marker());
+        infowindow.open(self.marker().get('map'), self.marker());
+        self.marker().setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function() {
+            self.marker().setAnimation(null);
+        }, 700);
+        callFoursquare(data);
 
     });
 
+};
+
+//store ajax call in a variable
+var callFoursquare =  function(dataModel){
+        $.ajax({
+            url: model.foursquareUrl,
+            data: 'intent=match&ll=' + dataModel.position.lat + ',' + dataModel.position.lng + '&categoryId=4deefb944765f83613cdba6e'+'&query=Creed&client_id=' + model.foursquareClientID +
+                '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
+            dataType: 'json',
+
+            success: function(data) {
+                var content = "<h3>"+dataModel.title+"</h3>"+"<img src='"+data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix+
+                    '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix+"'>"+"<div class='mdl-card__supporting-text'>"+dataModel.wikiInfo+"</div>";
+                //set local storage
+                localStorage.setItem('data.image',content);
+                infowindow.setContent(content);
+
+            },
+
+            error: function(jqXHR, status, err) {
+                var error = "couldn't connect to host " + status +err;
+                infowindow.setContent(error);
+
+            }
+
+        });
+                
+
+    };
+
+var viewModel = function() {
+
+
+    //create map
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: model.center,
+        zoom: model.zoom,
+        disableDefaultUI: true
+    });
+    bounds = new google.maps.LatLngBounds();
+
+    var self = this;
+    this.searchName = ko.observable();
+    this.points = ko.observableArray();
+
+    // create object point foreach site in modeleview
+    model.site.forEach(function(pointItem) {
+
+        self.points().push(new Point(pointItem));
+    });
+    //create live search function
+    this.liveSearch = ko.computed(function() {
+
+        //var search = self.searchName().toLowerCase();
+
+        if (!self.searchName()) {
+
+            self.points().forEach(function(point) {
+                point.marker().setVisible(true);
+            });
+            return self.points();
+        } else {
+            return ko.utils.arrayFilter(self.points(), function(item) {
+                var string = item.title().toLowerCase().indexOf(self.searchName().toLowerCase()) !== -1;
+                if (!string) {
+                    item.marker().setVisible(false);
+                } else {
+                    item.marker().setVisible(true);
+                }
+                return string;
+            });
+        }
+    });
+
+
+    // create function for click element name in list
+    this.forSquare = function (data) {
+        data.marker().setAnimation(google.maps.Animation.BOUNCE);//set bounce
+        setTimeout(function() {
+            data.marker().setAnimation(null);
+        }, 700);
+        google.maps.event.trigger(data.marker(), 'click');//open marker when link is clicked
+                     
+    };
 
 
 };
 
 
-var viewModel = function() {
-        
-        var self = this;
-        this.searchName = ko.observable();
-        this.points = ko.observableArray();
-
-        // create object point foreach site in modeleview
-        model.site.forEach(function(pointItem) {
-
-            self.points().push(new Point(pointItem));
-        });
-        //create live search function
-        this.liveSearch = ko.computed(function() {
-
-                    //var search = self.searchName().toLowerCase();
-
-                    if (!self.searchName()) {
-
-                        self.points().forEach(function(point) {
-                            point.marker().setVisible(true);
-                        });
-                        return self.points();
-                    } 
-                    else 
-                    {
-                        return ko.utils.arrayFilter(self.points(), function(item) {
-                            var string = item.title().toLowerCase().indexOf(self.searchName().toLowerCase()) !== -1;
-                            if (!string) {
-                                item.marker().setVisible(false);
-                            } 
-                            else {
-                                item.marker().setVisible(true);
-                            }
-                            return string;
-                            });
-                    }
-                });
-
-                    
-
-                    this.forSquareImage = ko.observable(); //set image from forsquare observable
-                    this.forSquareTitle = ko.observable(); //set observable true o false for box
-                    this.forSquareName = ko.observable(); // set variable observable for assign title in the box
-                    this.info = ko.observable(); // set variable observable for assign inforbation in the  box
-
-                    // create function for click element name in list
-                    this.forSquare = function(data) {
-                        self.forSquareName(data.title());
-                        self.info(data.wikiInfo());
-
-                        data.marker().setAnimation(google.maps.Animation.BOUNCE);
-                        setTimeout(function() {
-                            data.marker().setAnimation(null);
-                        }, 1000);
-                        //create ajax for retrive photo from foursquare
-                        $.ajax({
-                            url: model.foursquareUrl,
-                            data: 'intent=match&ll=' + data.position().lat + ',' + data.position().lng + '&query=Creed&client_id=' + model.foursquareClientID +
-                                '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
-                            dataType: 'json',
-
-                            success: function(data) {
-                                self.forSquareTitle(true);
-                                self.forSquareImage(data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix +
-                                    '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix);
-
-
-                            },
-
-                            error: function(jqXHR, status, err) {
-                                console.log("couldn't connect to host ", status, err);
-                            }
-
-                        });
-
-                    };
-
-                    //function for set not visible box when x is clicked
-                    this.close = function() {
-
-                        self.forSquareTitle(false);
-
-                    }
-
-                };
-
-
-                ko.applyBindings(viewModel());
+ko.applyBindings(viewModel());

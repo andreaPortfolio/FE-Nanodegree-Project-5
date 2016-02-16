@@ -5,7 +5,7 @@
 1) Clone the repository
 2) You need to have nodejs and gulp installed
 3) In the main dir of the project write:
-     npm install; gulp clean ; gulp
+     npm install; gulp
      
 #### To view this project
 
