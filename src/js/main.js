@@ -50,9 +50,15 @@ var model = {
 };
 
 
-var map;
-var infowindow;
-var bounds;
+function googleError() {
+
+    alert("Could not load Google Map");
+
+}
+
+var map,
+    infowindow,
+    bounds;
 
 // class contenent marker 
 var Point = function(data) {
