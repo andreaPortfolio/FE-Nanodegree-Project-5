@@ -90,7 +90,7 @@ var Point = function(data) {
     });
     //set bounds for each marker and fit bounds on map
     bounds.extend(new google.maps.LatLng(this.position()));
-
+    map.fitBounds(bounds);
 
 
     this.marker = ko.observable(marker); //set marker observable
@@ -103,7 +103,7 @@ var Point = function(data) {
             self.marker().setAnimation(null);
         }, 700);
         callFoursquare(data);
-        map.fitBounds(bounds);
+
         map.panTo(marker.getPosition());
 
     });
@@ -112,29 +112,34 @@ var Point = function(data) {
 
 //store ajax call in a variable
 var callFoursquare = function(dataModel) {
-    $.ajax({
-        url: model.foursquareUrl,
-        data: 'intent=match&ll=' + dataModel.position.lat + ',' + dataModel.position.lng + '&categoryId=4deefb944765f83613cdba6e' + '&query=Creed&client_id=' + model.foursquareClientID +
-            '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
-        dataType: 'json',
+    console.log((localStorage.getItem(dataModel.title + '-content')));
+    if ((localStorage.getItem(dataModel.title + '-content')) === null) {
+        $.ajax({
+          
+            url: model.foursquareUrl,
+            data: 'intent=match&ll=' + dataModel.position.lat + ',' + dataModel.position.lng + '&categoryId=4deefb944765f83613cdba6e' + '&query=Creed&client_id=' + model.foursquareClientID +
+                '&client_secret=' + model.foursquareClientSecret + '&v=20160205&venuePhotos=1',
+            dataType: 'json',
 
-        success: function(data) {
-            var content = "<h3>" + dataModel.title + "</h3>" + "<img src='" + data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix +
-                '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix + "'>" + "<div class='mdl-card__supporting-text'>" + dataModel.wikiInfo + "</div>";
-            //set local storage
-            localStorage.setItem('data.image', content);
-            infowindow.setContent(content);
+            success: function(data) {
+                var content = "<h3>" + dataModel.title + "</h3>" + "<img src='" + data.response.groups[0].items[0].venue.photos.groups[0].items[0].prefix +
+                    '80x60' + data.response.groups[0].items[0].venue.photos.groups[0].items[0].suffix + "'>" + "<div class='mdl-card__supporting-text'>" + dataModel.wikiInfo + "</div>";
+                //set local storage
+                localStorage.setItem(dataModel.title + '-content', content);
+                infowindow.setContent(content);
+            },
 
+            error: function(jqXHR, status, err) {
+                var error = "couldn't connect to host " + status + err;
+                infowindow.setContent(error);
+            }
 
-        },
-
-        error: function(jqXHR, status, err) {
-            var error = "couldn't connect to host " + status + err;
-            infowindow.setContent(error);
-
-        }
-
-    });
+        });
+    } else {
+        var content = localStorage.getItem(dataModel.title + '-content');
+        infowindow.setContent(content);
+        console.log('tt');
+    }
 
 
 };
